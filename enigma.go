@@ -25,25 +25,112 @@ var rotors = [8]string {
 	"NZJHGRCXMYSWBOUFAIVLPEKQDT",
 	"FKQHTLXOCBJSPDZRAMEWNIUYGV",
 }
+var reflector = "YRUHQSLDPXNGOKMIEBFZCWVJAT";
 // The index of the rotor key within rotors array
 var firstRotor, secondRotor, thirdRotor int;
+var rotorRotations[3] int;
+var ringSettings[3] int;
 
 func main() {
 	setDefaults();
-	fmt.Println(encodeChar("A"));
-	fmt.Println(encodeChar("Z"));
+	
+	// for i := 0; i<26; i++ {
+	// 	fmt.Printf("%s: ", string(i+65));
+	// 	setDefaults();
+	// 	encoded := encodeChar(string(i+65));
+	// 	fmt.Printf("%s-", encoded)
+	// 	setDefaults();
+	// 	decoded := encodeChar(encoded);
+	// 	fmt.Printf("%s\n", decoded);
+	// }
+
+	message := ""
+	for i := 65; i <=90; i++ {
+		ch := string(i);
+		encodedCh := encodeChar(ch);
+		message = message + encodedCh;
+	}
+	fmt.Println(message);
+
+	setDefaults();
+	decoded := ""
+	for i:=0; i<26; i++ {
+		ch := string(message[i]);
+		decodedCh := encodeChar(ch);
+		decoded = decoded + decodedCh;
+	}
+	fmt.Println(decoded);
 }
 
 func encodeChar(c string) string {
 	// Substitute character with plugboard match
 	plugChar := plugboard[c];
-	if plugChar == "" { plugChar = c }
+	if plugChar == "" { 
+		plugChar = c 
+	}
+	//if c == "D" { fmt.Printf("%s", plugChar) }
 
 	// Pass character through rotors
+	rot1InAscii := int(plugChar[0]) - rotorRotations[0];
+	rot1InAscii = fitAsciiToAlpha(rot1InAscii);
+	rot1Out := rotorInToOut(0, string(rot1InAscii));
+	//if (c == "A") { fmt.Printf("%s", rot1Out) }
+
+	rot2InAscii := int(rot1Out[0]) + rotorRotations[0] - rotorRotations[1];
+	rot2InAscii = fitAsciiToAlpha(rot2InAscii);
+	//if (c == "A") { fmt.Printf("%s", string(rot2InAscii)) }
+	rot2Out := rotorInToOut(1, string(rot2InAscii));
+	//if (c == "A") { fmt.Printf("%s", rot2Out) }
+
+	rot3InAscii := int(rot2Out[0]) + rotorRotations[1] - rotorRotations[2];
+	rot3InAscii = fitAsciiToAlpha(rot3InAscii);
+	//if c == "A" { fmt.Printf("%s", string(rot3InAscii)) }
+	rot3Out := rotorInToOut(2, string(rot3InAscii));
+	//if c == "D" { fmt.Printf("%s", rot3Out) }
+
+	// Pass through the reflector
+	outIdx := ( int(rot3Out[0]) - 65 + rotorRotations[2] ) % 26;
+	rot3InAscii = int(reflector[outIdx]) - rotorRotations[2];
+	rot3InAscii = fitAsciiToAlpha(rot3InAscii);
+	// if (c == "A") { fmt.Printf("%s", string(rot3InAscii)) }
+	// if c == "D" { fmt.Printf("%s", string(rot3InAscii)) }
 
 	// Pass backward through rotors
+	rot3Out = rotorOutToIn(2, string(rot3InAscii));
+	//if (c == "A") { fmt.Printf("%s", rot3Out) }
 
-	return "";
+	rot2InAscii = int(rot3Out[0]) + rotorRotations[2] - rotorRotations[1];
+	rot2InAscii = fitAsciiToAlpha(rot2InAscii);
+	rot2Out = rotorOutToIn(1, string(rot2InAscii));
+	//if (c == "A") { fmt.Printf("%s", rot2Out) }
+
+	rot1InAscii = int(rot2Out[0]) + rotorRotations[1] - rotorRotations[0];
+	rot1InAscii = fitAsciiToAlpha(rot1InAscii);
+	//if (c == "A") { fmt.Printf("%s", string(rot1InAscii)) }
+	rot1Out = rotorOutToIn(0, string(rot1InAscii));
+	//if c == "D" { fmt.Printf("%s", rot1Out) }
+
+	// Pass backward through plugboard
+	plugCharInAscii := int(rot1Out[0]) + rotorRotations[0];
+	plugCharInAscii = fitAsciiToAlpha(plugCharInAscii);
+	plugChar = plugboard[string(plugCharInAscii)];
+	if plugChar == "" { plugChar = string(plugCharInAscii) }
+
+	// Rotate rotors
+	rotorRotations[0] ++;
+	if rotorRotations[0] > 25 {
+		rotorRotations[0] = 0;
+		rotorRotations[1] ++;
+	}
+	if rotorRotations[1] > 25 {
+		rotorRotations[1] = 0;
+		rotorRotations[2] ++;
+	}
+	if rotorRotations[2] > 25 {
+		rotorRotations[2] = 0;
+	}
+
+	return plugChar;
 }
 
 func setDefaults() {
@@ -71,12 +158,14 @@ func setDefaults() {
 	Set starting Rotor rotations
 	integer 0-25
 	*/
+	rotorRotations = [3]int {2, 22, 1}
 
 	/*
 	Set rotor ringSettings
 	integer 0-25, specifies how much the key should be shifted right (end chars moving to beginning).
 	0 is the default setting and == the key found in rotors array
 	*/
+	ringSettings = [3]int {0, 0, 0}
 }
 
 func rotorInToOut(rotor int, in string) string {
@@ -87,4 +176,15 @@ func rotorInToOut(rotor int, in string) string {
 func rotorOutToIn(rotor int, out string) string {
 	inASCII := strings.Index(rotors[rotor], out) + 65;
 	return string(inASCII);
+}
+
+func fitAsciiToAlpha(value int) int {
+	out := value
+	for out < 65 {
+		out += 26;
+	}
+	for out > 90 {
+		out -= 26;
+	}
+	return out;
 }
