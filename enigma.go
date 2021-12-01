@@ -33,17 +33,6 @@ var ringSettings[3] int;
 
 func main() {
 	setDefaults();
-	
-	// for i := 0; i<26; i++ {
-	// 	fmt.Printf("%s: ", string(i+65));
-	// 	setDefaults();
-	// 	encoded := encodeChar(string(i+65));
-	// 	fmt.Printf("%s-", encoded)
-	// 	setDefaults();
-	// 	decoded := encodeChar(encoded);
-	// 	fmt.Printf("%s\n", decoded);
-	// }
-
 	message := ""
 	for i := 65; i <=90; i++ {
 		ch := string(i);
@@ -68,47 +57,35 @@ func encodeChar(c string) string {
 	if plugChar == "" { 
 		plugChar = c 
 	}
-	//if c == "D" { fmt.Printf("%s", plugChar) }
 
 	// Pass character through rotors
 	rot1InAscii := int(plugChar[0]) - rotorRotations[0];
 	rot1InAscii = fitAsciiToAlpha(rot1InAscii);
 	rot1Out := rotorInToOut(0, string(rot1InAscii));
-	//if (c == "A") { fmt.Printf("%s", rot1Out) }
 
 	rot2InAscii := int(rot1Out[0]) + rotorRotations[0] - rotorRotations[1];
 	rot2InAscii = fitAsciiToAlpha(rot2InAscii);
-	//if (c == "A") { fmt.Printf("%s", string(rot2InAscii)) }
 	rot2Out := rotorInToOut(1, string(rot2InAscii));
-	//if (c == "A") { fmt.Printf("%s", rot2Out) }
 
 	rot3InAscii := int(rot2Out[0]) + rotorRotations[1] - rotorRotations[2];
 	rot3InAscii = fitAsciiToAlpha(rot3InAscii);
-	//if c == "A" { fmt.Printf("%s", string(rot3InAscii)) }
 	rot3Out := rotorInToOut(2, string(rot3InAscii));
-	//if c == "D" { fmt.Printf("%s", rot3Out) }
 
 	// Pass through the reflector
 	outIdx := ( int(rot3Out[0]) - 65 + rotorRotations[2] ) % 26;
 	rot3InAscii = int(reflector[outIdx]) - rotorRotations[2];
 	rot3InAscii = fitAsciiToAlpha(rot3InAscii);
-	// if (c == "A") { fmt.Printf("%s", string(rot3InAscii)) }
-	// if c == "D" { fmt.Printf("%s", string(rot3InAscii)) }
 
 	// Pass backward through rotors
 	rot3Out = rotorOutToIn(2, string(rot3InAscii));
-	//if (c == "A") { fmt.Printf("%s", rot3Out) }
 
 	rot2InAscii = int(rot3Out[0]) + rotorRotations[2] - rotorRotations[1];
 	rot2InAscii = fitAsciiToAlpha(rot2InAscii);
 	rot2Out = rotorOutToIn(1, string(rot2InAscii));
-	//if (c == "A") { fmt.Printf("%s", rot2Out) }
 
 	rot1InAscii = int(rot2Out[0]) + rotorRotations[1] - rotorRotations[0];
 	rot1InAscii = fitAsciiToAlpha(rot1InAscii);
-	//if (c == "A") { fmt.Printf("%s", string(rot1InAscii)) }
 	rot1Out = rotorOutToIn(0, string(rot1InAscii));
-	//if c == "D" { fmt.Printf("%s", rot1Out) }
 
 	// Pass backward through plugboard
 	plugCharInAscii := int(rot1Out[0]) + rotorRotations[0];
