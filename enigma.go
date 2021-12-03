@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"strconv"
 )
 
 /*
@@ -27,11 +28,16 @@ var rotors = [8]string {
 }
 var reflector = "YRUHQSLDPXNGOKMIEBFZCWVJAT";
 // The index of the rotor key within rotors array
-var firstRotor, secondRotor, thirdRotor int;
+var rotorSelections[3] int;
+
 var rotorRotations[3] int;
 var ringSettings[3] int;
 
 func main() {
+	setDefaults();
+	getSettings();
+
+	return;
 	setDefaults();
 	message := ""
 	for i := 65; i <=90; i++ {
@@ -59,52 +65,52 @@ func encodeChar(c string) string {
 	}
 
 	// Pass character through rotors
-	rot1InAscii := int(plugChar[0]) - rotorRotations[0];
+	rot1InAscii := int(plugChar[0]) - rotorRotations[rotorSelections[0]];
 	rot1InAscii = fitAsciiToAlpha(rot1InAscii);
 	rot1Out := rotorInToOut(0, string(rot1InAscii));
 
-	rot2InAscii := int(rot1Out[0]) + rotorRotations[0] - rotorRotations[1];
+	rot2InAscii := int(rot1Out[0]) + rotorRotations[rotorSelections[0]] - rotorRotations[rotorSelections[1]];
 	rot2InAscii = fitAsciiToAlpha(rot2InAscii);
 	rot2Out := rotorInToOut(1, string(rot2InAscii));
 
-	rot3InAscii := int(rot2Out[0]) + rotorRotations[1] - rotorRotations[2];
+	rot3InAscii := int(rot2Out[0]) + rotorRotations[rotorSelections[1]] - rotorRotations[rotorSelections[2]];
 	rot3InAscii = fitAsciiToAlpha(rot3InAscii);
 	rot3Out := rotorInToOut(2, string(rot3InAscii));
 
 	// Pass through the reflector
-	outIdx := ( int(rot3Out[0]) - 65 + rotorRotations[2] ) % 26;
-	rot3InAscii = int(reflector[outIdx]) - rotorRotations[2];
+	outIdx := ( int(rot3Out[0]) - 65 + rotorRotations[rotorSelections[2]] ) % 26;
+	rot3InAscii = int(reflector[outIdx]) - rotorRotations[rotorSelections[2]];
 	rot3InAscii = fitAsciiToAlpha(rot3InAscii);
 
 	// Pass backward through rotors
 	rot3Out = rotorOutToIn(2, string(rot3InAscii));
 
-	rot2InAscii = int(rot3Out[0]) + rotorRotations[2] - rotorRotations[1];
+	rot2InAscii = int(rot3Out[0]) + rotorRotations[rotorSelections[2]] - rotorRotations[rotorSelections[1]];
 	rot2InAscii = fitAsciiToAlpha(rot2InAscii);
 	rot2Out = rotorOutToIn(1, string(rot2InAscii));
 
-	rot1InAscii = int(rot2Out[0]) + rotorRotations[1] - rotorRotations[0];
+	rot1InAscii = int(rot2Out[0]) + rotorRotations[rotorSelections[1]] - rotorRotations[rotorSelections[0]];
 	rot1InAscii = fitAsciiToAlpha(rot1InAscii);
 	rot1Out = rotorOutToIn(0, string(rot1InAscii));
 
 	// Pass backward through plugboard
-	plugCharInAscii := int(rot1Out[0]) + rotorRotations[0];
+	plugCharInAscii := int(rot1Out[0]) + rotorRotations[rotorSelections[0]];
 	plugCharInAscii = fitAsciiToAlpha(plugCharInAscii);
 	plugChar = plugboard[string(plugCharInAscii)];
 	if plugChar == "" { plugChar = string(plugCharInAscii) }
 
 	// Rotate rotors
-	rotorRotations[0] ++;
-	if rotorRotations[0] > 25 {
-		rotorRotations[0] = 0;
-		rotorRotations[1] ++;
+	rotorRotations[rotorSelections[0]] ++;
+	if rotorRotations[rotorSelections[0]] > 25 {
+		rotorRotations[rotorSelections[0]] = 0;
+		rotorRotations[rotorSelections[1]] ++;
 	}
-	if rotorRotations[1] > 25 {
-		rotorRotations[1] = 0;
-		rotorRotations[2] ++;
+	if rotorRotations[rotorSelections[1]] > 25 {
+		rotorRotations[rotorSelections[1]] = 0;
+		rotorRotations[rotorSelections[2]] ++;
 	}
-	if rotorRotations[2] > 25 {
-		rotorRotations[2] = 0;
+	if rotorRotations[rotorSelections[2]] > 25 {
+		rotorRotations[rotorSelections[2]] = 0;
 	}
 
 	return plugChar;
@@ -127,15 +133,13 @@ func setDefaults() {
 	/*
 	Set Rotors being used
 	*/
-	firstRotor = 0;
-	secondRotor = 1;
-	thirdRotor = 2;
+	rotorSelections = [3]int {0, 1, 2}
 
 	/*
 	Set starting Rotor rotations
 	integer 0-25
 	*/
-	rotorRotations = [3]int {2, 22, 1}
+	rotorRotations = [3]int {0, 0, 0}
 
 	/*
 	Set rotor ringSettings
@@ -164,4 +168,17 @@ func fitAsciiToAlpha(value int) int {
 		out -= 26;
 	}
 	return out;
+}
+
+func getSettings() {
+	var input string;
+	for i := 0; i < 3; i++ {
+		fmt.Println("Select first Rotor (0-7) [default 0]: ")
+		fmt.Scanln(&input);
+		selection, err := strconv.Atoi(input);
+		fmt.Println(selection);
+		if err != nil {
+			fmt.Println(err);
+		}
+	}
 }
