@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"strconv"
+	"bufio"
+	"os"
 )
 
 /*
@@ -37,27 +39,30 @@ func main() {
 	setDefaults();
 	getSettings();
 
-	return;
-	setDefaults();
-	message := ""
-	for i := 65; i <=90; i++ {
-		ch := string(i);
-		encodedCh := encodeChar(ch);
-		message = message + encodedCh;
+	var message string;
+	for len(message) < 1 {
+		fmt.Println("Enter your message to be encoded");
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		message = scanner.Text()
+		message = strings.ToUpper(message);
 	}
-	fmt.Println(message);
 
-	setDefaults();
-	decoded := ""
-	for i:=0; i<26; i++ {
+	encoded := ""
+	for i := 0; i < len(message); i++ {
 		ch := string(message[i]);
-		decodedCh := encodeChar(ch);
-		decoded = decoded + decodedCh;
+		encodedCh := encodeChar(ch);
+		encoded = encoded + encodedCh;
 	}
-	fmt.Println(decoded);
+	fmt.Println(encoded);
 }
 
 func encodeChar(c string) string {
+	// Don't encode non alphabetic characters
+	if int(c[0]) < 65 || int(c[0]) > 90 {
+		return c;
+	}
+
 	// Substitute character with plugboard match
 	plugChar := plugboard[c];
 	if plugChar == "" { 
@@ -65,52 +70,52 @@ func encodeChar(c string) string {
 	}
 
 	// Pass character through rotors
-	rot1InAscii := int(plugChar[0]) - rotorRotations[rotorSelections[0]];
+	rot1InAscii := int(plugChar[0]) - rotorRotations[0];
 	rot1InAscii = fitAsciiToAlpha(rot1InAscii);
-	rot1Out := rotorInToOut(0, string(rot1InAscii));
+	rot1Out := rotorInToOut(rotorSelections[0], string(rot1InAscii));
 
-	rot2InAscii := int(rot1Out[0]) + rotorRotations[rotorSelections[0]] - rotorRotations[rotorSelections[1]];
+	rot2InAscii := int(rot1Out[0]) + rotorRotations[0] - rotorRotations[1];
 	rot2InAscii = fitAsciiToAlpha(rot2InAscii);
-	rot2Out := rotorInToOut(1, string(rot2InAscii));
+	rot2Out := rotorInToOut(rotorSelections[1], string(rot2InAscii));
 
-	rot3InAscii := int(rot2Out[0]) + rotorRotations[rotorSelections[1]] - rotorRotations[rotorSelections[2]];
+	rot3InAscii := int(rot2Out[0]) + rotorRotations[1] - rotorRotations[2];
 	rot3InAscii = fitAsciiToAlpha(rot3InAscii);
-	rot3Out := rotorInToOut(2, string(rot3InAscii));
+	rot3Out := rotorInToOut(rotorSelections[2], string(rot3InAscii));
 
 	// Pass through the reflector
-	outIdx := ( int(rot3Out[0]) - 65 + rotorRotations[rotorSelections[2]] ) % 26;
-	rot3InAscii = int(reflector[outIdx]) - rotorRotations[rotorSelections[2]];
+	outIdx := ( int(rot3Out[0]) - 65 + rotorRotations[2] ) % 26;
+	rot3InAscii = int(reflector[outIdx]) - rotorRotations[2];
 	rot3InAscii = fitAsciiToAlpha(rot3InAscii);
 
 	// Pass backward through rotors
-	rot3Out = rotorOutToIn(2, string(rot3InAscii));
+	rot3Out = rotorOutToIn(rotorSelections[2], string(rot3InAscii));
 
-	rot2InAscii = int(rot3Out[0]) + rotorRotations[rotorSelections[2]] - rotorRotations[rotorSelections[1]];
+	rot2InAscii = int(rot3Out[0]) + rotorRotations[2] - rotorRotations[1];
 	rot2InAscii = fitAsciiToAlpha(rot2InAscii);
-	rot2Out = rotorOutToIn(1, string(rot2InAscii));
+	rot2Out = rotorOutToIn(rotorSelections[1], string(rot2InAscii));
 
-	rot1InAscii = int(rot2Out[0]) + rotorRotations[rotorSelections[1]] - rotorRotations[rotorSelections[0]];
+	rot1InAscii = int(rot2Out[0]) + rotorRotations[1] - rotorRotations[0];
 	rot1InAscii = fitAsciiToAlpha(rot1InAscii);
-	rot1Out = rotorOutToIn(0, string(rot1InAscii));
+	rot1Out = rotorOutToIn(rotorSelections[0], string(rot1InAscii));
 
 	// Pass backward through plugboard
-	plugCharInAscii := int(rot1Out[0]) + rotorRotations[rotorSelections[0]];
+	plugCharInAscii := int(rot1Out[0]) + rotorRotations[0];
 	plugCharInAscii = fitAsciiToAlpha(plugCharInAscii);
 	plugChar = plugboard[string(plugCharInAscii)];
 	if plugChar == "" { plugChar = string(plugCharInAscii) }
 
 	// Rotate rotors
-	rotorRotations[rotorSelections[0]] ++;
-	if rotorRotations[rotorSelections[0]] > 25 {
-		rotorRotations[rotorSelections[0]] = 0;
-		rotorRotations[rotorSelections[1]] ++;
+	rotorRotations[0] ++;
+	if rotorRotations[0] > 25 {
+		rotorRotations[0] = 0;
+		rotorRotations[1] ++;
 	}
-	if rotorRotations[rotorSelections[1]] > 25 {
-		rotorRotations[rotorSelections[1]] = 0;
-		rotorRotations[rotorSelections[2]] ++;
+	if rotorRotations[1] > 25 {
+		rotorRotations[1] = 0;
+		rotorRotations[2] ++;
 	}
-	if rotorRotations[rotorSelections[2]] > 25 {
-		rotorRotations[rotorSelections[2]] = 0;
+	if rotorRotations[2] > 25 {
+		rotorRotations[2] = 0;
 	}
 
 	return plugChar;
@@ -139,7 +144,7 @@ func setDefaults() {
 	Set starting Rotor rotations
 	integer 0-25
 	*/
-	rotorRotations = [3]int {0, 0, 0}
+	rotorRotations = [3]int {2, 25, 0}
 
 	/*
 	Set rotor ringSettings
@@ -172,13 +177,140 @@ func fitAsciiToAlpha(value int) int {
 
 func getSettings() {
 	var input string;
+
+	// Select Rotors & Rotation
 	for i := 0; i < 3; i++ {
-		fmt.Println("Select first Rotor (0-7) [default 0]: ")
-		fmt.Scanln(&input);
-		selection, err := strconv.Atoi(input);
-		fmt.Println(selection);
-		if err != nil {
-			fmt.Println(err);
+		//Select Rotor
+		selectionValid := 0;
+		for selectionValid != 1 {
+			input = ""
+			fmt.Printf("Select Rotor #%d (0-7) [default %d]: \n", i, i)
+			fmt.Scanln(&input);
+			var selection int;
+			var err error;
+			if input == "" { // Use default
+				selection = i
+			} else {
+				selection, err = strconv.Atoi(input);
+			}
+
+			if err != nil {
+				fmt.Println("Unable to parse input. Please only enter a number 0-7");
+			} else if selection < 0 || selection > 7 {
+				fmt.Println("Selection out of bounds");
+			} else {
+				for j := 0; j<i; j++ {
+					if rotorSelections[j] == selection {
+						selectionValid = -1
+					}
+				}
+				if selectionValid == -1 {
+					fmt.Printf("Rotor %s alrady in use\n", strconv.Itoa(selection));
+					selectionValid = 0;
+				} else { // VALID
+					rotorSelections[i] = selection;
+					selectionValid = 1;
+				}
+			}
+		}
+
+		//Select Rotation
+		selectionValid = 0;
+		for selectionValid != 1 {
+			input = ""
+			fmt.Println("Select starting rotation (0-25) [default 0]: ")
+			fmt.Scanln(&input);
+			if input == "" { // Use default
+				selectionValid = 1;
+				continue;
+			}
+			selection, err := strconv.Atoi(input);
+			if err != nil {
+				fmt.Println("Unable to parse input. Please only enter a number 0-25");
+			} else if selection < 0 || selection > 25 {
+				fmt.Println("Selection out of bounds");
+			} else {
+				rotorRotations[i] = selection;
+				selectionValid = 1;
+			}
+		}
+	}
+
+	// Plugboard settings 
+	fmt.Println("Enter plugboard settings separated by space (ie 'AZ BR TN QP') [default AB CD ... ST]")
+	plugboardValid := 0
+
+	for plugboardValid != 1 {
+		input = ""
+		// Use bufio isntead of scanf to allow spaces
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		input = scanner.Text()
+		input = strings.ToUpper(input);
+		if input == "" { // use default
+			plugboardValid = 1;
+			continue;
+		}
+
+		var tempPlugs = make( map[string]string );
+		//Modes:
+		EXPECTFIRST := 0;
+		EXPECTSECOND := 1;
+		EXPECTSPACE := 2;
+		FAIL := 3;
+		mode := EXPECTFIRST
+		firstChar := ""
+		for ch := 0; ch < len(input); ch ++ {
+			if mode == EXPECTFIRST {
+				if string(input[ch]) == " " {
+					continue;
+				} else if input[ch] < 65 || input[ch] > 90 {
+					fmt.Printf("unexpected char at %d: %s\n", ch, string(input[ch]));
+					mode = FAIL;
+					break;
+				} else {
+					firstChar = string(input[ch])
+					mode = EXPECTSECOND;
+				}
+			} else if mode == EXPECTSECOND {
+				if input[ch] < 65 || input[ch] > 90 {
+					fmt.Printf("unexpected char at %d: %s\n", ch, string(input[ch]));
+					mode = FAIL;
+					break;
+				} else {
+					secondChar := string(input[ch]);
+					if tempPlugs[firstChar] != "" {
+						fmt.Printf("Character '%s' used twice\n", firstChar);
+						mode = FAIL;
+						break;
+					} else if tempPlugs[secondChar] != "" {
+						fmt.Printf("Character '%s' used twice\n", secondChar);
+						mode = FAIL;
+						break;
+					} else { // Valid pair
+						tempPlugs[firstChar] = secondChar;
+						tempPlugs[secondChar] = firstChar;
+						mode = EXPECTSPACE;
+					}
+				}
+			} else if mode == EXPECTSPACE {
+				if string(input[ch]) != " " {
+					fmt.Printf("Error, expected space but read '%s' at %d\n", string(input[ch]), ch)
+					mode = FAIL;
+					break;
+				} else {
+					mode = EXPECTFIRST;
+				}
+			}
+		}
+		// Deep copy tempPlugs to plugboard
+		if mode == EXPECTSPACE || mode == EXPECTFIRST {
+			for k,v := range tempPlugs {
+				plugboard[k] = v
+			}
+			plugboardValid = 1;
+		} else {
+			plugboardValid = 0;
 		}
 	}
 }
